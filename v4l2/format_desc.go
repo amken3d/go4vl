@@ -115,17 +115,18 @@ func GetAllFormatDescriptions(fd uintptr) (result []FormatDescription, err error
 	return result, nil
 }
 
-// GetFormatDescriptionByEncoding returns a FormatDescription that matches the specified encoded pixel format
-func GetFormatDescriptionByEncoding(fd uintptr, enc FourCCType) (FormatDescription, error) {
+// GetFormatDescriptions returns format descriptions for specified pixel format
+func GetFormatDescriptions(fd uintptr, format FourCCType) ([]FormatDescription, error) {
+	var result []FormatDescription
 	descs, err := GetAllFormatDescriptions(fd)
 	if err != nil {
-		return FormatDescription{}, fmt.Errorf("format desc: encoding %s: %s", PixelFormats[enc], err)
+		return nil, fmt.Errorf("format desc: encoding %s: %s", PixelFormats[format], err)
 	}
 	for _, desc := range descs {
-		if desc.PixelFormat == enc {
-			return desc, nil
+		if desc.PixelFormat == format {
+			result = append(result, desc)
 		}
 	}
 
-	return FormatDescription{}, fmt.Errorf("format desc: driver does not support encoding %d", enc)
+	return result, nil
 }

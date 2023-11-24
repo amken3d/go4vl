@@ -232,13 +232,40 @@ func (d *Device) GetFormatDescription(idx uint32) (v4l2.FormatDescription, error
 	return v4l2.GetFormatDescription(d.fd, idx)
 }
 
-// GetFormatDescriptions returns all possible format descriptions for device
-func (d *Device) GetFormatDescriptions() ([]v4l2.FormatDescription, error) {
+// GetAllFormatDescriptions returns all possible format descriptions for device
+func (d *Device) GetAllFormatDescriptions() ([]v4l2.FormatDescription, error) {
 	if !d.cap.IsVideoCaptureSupported() {
 		return nil, v4l2.ErrorUnsupportedFeature
 	}
 
 	return v4l2.GetAllFormatDescriptions(d.fd)
+}
+
+// GetFormatDescriptions returns all device format descriptions for specified format
+func (d *Device) GetFormatDescriptions(format v4l2.FourCCType) ([]v4l2.FormatDescription, error) {
+	if !d.cap.IsVideoCaptureSupported() {
+		return nil, v4l2.ErrorUnsupportedFeature
+	}
+
+	return v4l2.GetFormatDescriptions(d.fd, format)
+}
+
+// GetAllFormatFrameSizes returns all supported device frame sizes
+func (d *Device) GetAllFormatFrameSizes() ([]v4l2.FrameSizeEnum, error) {
+	if !d.cap.IsVideoCaptureSupported() {
+		return nil, v4l2.ErrorUnsupportedFeature
+	}
+
+	return v4l2.GetAllFormatFrameSizes(d.fd)
+}
+
+// GetFormatFrameSizes returns all supported device frame sizes for specified pixel format
+func (d *Device) GetFormatFrameSizes(format v4l2.FourCCType) ([]v4l2.FrameSizeEnum, error) {
+	if !d.cap.IsVideoCaptureSupported() {
+		return nil, v4l2.ErrorUnsupportedFeature
+	}
+
+	return v4l2.GetFormatFrameSizes(d.fd, format)
 }
 
 // GetVideoInputIndex returns current video input index for device
