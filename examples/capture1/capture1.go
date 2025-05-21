@@ -37,64 +37,67 @@ func main() {
 		log.Fatalf("failed to get framerate: %s", err)
 	}
 
-	// helper function to search for format descriptions
-	findPreferredFmt := func(fmts []v4l2.FormatDescription, pixEncoding v4l2.FourCCType) *v4l2.FormatDescription {
-		for _, desc := range fmts {
-			if desc.PixelFormat == pixEncoding {
-				return &desc
-			}
-		}
-		return nil
+	allFormats, err := device.GetAllFormatDescriptions()
+	if err != nil {
+		log.Fatal("failed to get format descriptions: %s", err)
 	}
 
-	// get supported format descriptions
-	fmtDescs, err := device.GetFormatDescriptions()
-	if err != nil {
-		log.Fatal("failed to get format desc:", err)
+	// helper function to search for format descriptions
+	findPreferredFmt := func(pixEncoding v4l2.FourCCType) (v4l2.FormatDescription, error) {
+		for _, desc := range allFormats {
+			if desc.PixelFormat == pixEncoding {
+				return desc, nil
+			}
+		}
+		return v4l2.FormatDescription{}, fmt.Errorf("preferred format not found")
 	}
 
 	// search for preferred formats
-	preferredFmts := []v4l2.FourCCType{v4l2.PixelFmtMPEG, v4l2.PixelFmtMJPEG, v4l2.PixelFmtJPEG, v4l2.PixelFmtYUYV}
-	var fmtDesc *v4l2.FormatDescription
-	for _, preferredFmt := range preferredFmts {
-		fmtDesc = findPreferredFmt(fmtDescs, preferredFmt)
-		if fmtDesc != nil {
+	preferredPixFmts := []v4l2.FourCCType{v4l2.PixelFmtMPEG, v4l2.PixelFmtMJPEG, v4l2.PixelFmtJPEG, v4l2.PixelFmtYUYV}
+
+	var sizes []v4l2.FrameSizeEnum
+	var preferredFmt v4l2.FormatDescription
+	for _, pixFmt := range preferredPixFmts {
+		preferredFmt, err = findPreferredFmt(pixFmt)
+		if err != nil {
+			continue
+		}
+		sizes, err = device.GetFormatFrameSizes(preferredFmt.PixelFormat)
+		if err != nil {
+			continue
+		}
+		if sizes != nil && len(sizes) > 0 {
 			break
 		}
 	}
 
-	// no preferred pix fmt supported
-	if fmtDesc == nil {
-		log.Fatalf("device does not support any of %#v", preferredFmts)
-	}
-	log.Printf("Found preferred fmt: %s", fmtDesc)
-
-	frameSizes, err := v4l2.GetFormatFrameSizes(device.Fd(), fmtDesc.PixelFormat)
-	if err != nil {
-		log.Fatalf("failed to get framesize info: %s", err)
+	if sizes == nil || len(sizes) == 0 {
+		log.Fatal("no appropriate sizes found for specified format: %s", preferredFmt)
 	}
 
-	// select size 640x480 for format
-	var frmSize v4l2.FrameSizeEnum
-	for _, size := range frameSizes {
+	// select size
+	prefSize := sizes[0]
+	prefSizeFound := false
+	for _, size := range sizes {
 		if size.Size.MinWidth == uint32(width) && size.Size.MinHeight == uint32(height) {
-			frmSize = size
+			prefSizeFound = true
 			break
 		}
 	}
 
-	if frmSize.Size.MinWidth == 0 {
-		log.Fatalf("Size %dx%d not supported for fmt: %s", width, height, fmtDesc)
+	if !prefSizeFound {
+		log.Printf("Specified size %dx%d not supported, setting to %dx%d: %s", width, height, prefSize.Size.MinWidth, prefSize.Size.MinHeight)
+		width = int(prefSize.Size.MinWidth)
+		height = int(prefSize.Size.MinHeight)
 	}
 
-	log.Printf("Found preferred size: %#v", frmSize)
+	log.Printf("Found preferred size: %#v", prefSize)
 
 	// configure device with preferred fmt
-
 	if err := device.SetPixFormat(v4l2.PixFormat{
-		Width:       frmSize.Size.MinWidth,
-		Height:      frmSize.Size.MinHeight,
-		PixelFormat: fmtDesc.PixelFormat,
+		Width:       prefSize.Size.MinWidth,
+		Height:      prefSize.Size.MinHeight,
+		PixelFormat: preferredFmt.PixelFormat,
 		Field:       v4l2.FieldNone,
 	}); err != nil {
 		log.Fatalf("failed to set format: %s", err)
