@@ -5,11 +5,12 @@ import (
 )
 
 type config struct {
-	ioType    v4l2.IOType
-	pixFormat v4l2.PixFormat
-	bufSize   uint32
-	fps       uint32
-	bufType   uint32
+	ioType        v4l2.IOType
+	pixFormat     v4l2.PixFormat
+	bufSize       uint32
+	fps           uint32
+	bufType       uint32
+	skipFrameRate bool
 }
 
 type Option func(*config)
@@ -47,5 +48,12 @@ func WithVideoCaptureEnabled() Option {
 func WithVideoOutputEnabled() Option {
 	return func(o *config) {
 		o.bufType = v4l2.BufTypeVideoOutput
+	}
+}
+
+// WithoutFrameRate creates an option that skips frame rate operations
+func WithoutFrameRate() Option {
+	return func(c *config) {
+		c.skipFrameRate = true
 	}
 }

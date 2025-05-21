@@ -4,7 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
+
 	"os"
+	"reflect"
 	sys "syscall"
 
 	"github.com/vladimirvivien/go4vl/v4l2"
@@ -29,6 +32,7 @@ type Device struct {
 func Open(path string, options ...Option) (*Device, error) {
 	fd, err := v4l2.OpenDevice(path, sys.O_RDWR|sys.O_NONBLOCK, 0)
 	if err != nil {
+
 		return nil, fmt.Errorf("device open: %w", err)
 	}
 
@@ -101,13 +105,21 @@ func Open(path string, options ...Option) (*Device, error) {
 	}
 
 	// set fps
-	if dev.config.fps != 0 {
+	if !reflect.ValueOf(dev.config.fps).IsZero() {
+		// User explicitly set frame rate, try to set it
 		if err := dev.SetFrameRate(dev.config.fps); err != nil {
 			return nil, fmt.Errorf("device open: %s: set fps: %w", path, err)
 		}
-	} else {
+	} else if !dev.config.skipFrameRate {
+		// Only get frame rate if not skipped
 		if dev.config.fps, err = dev.GetFrameRate(); err != nil {
-			return nil, fmt.Errorf("device open: %s: get fps: %w", path, err)
+			if dev.config.skipFrameRate {
+				// Just log warning if skipFrameRate is enabled
+				log.Printf("Warning: failed to get frame rate for device %s: %v", path, err)
+			} else {
+				// Otherwise return error as before
+				return nil, fmt.Errorf("device open: %s: get fps: %w", path, err)
+			}
 		}
 	}
 
@@ -326,11 +338,17 @@ func (d *Device) SetFrameRate(fps uint32) error {
 
 // GetFrameRate returns the FPS value for the device
 func (d *Device) GetFrameRate() (uint32, error) {
-	if d.config.fps == 0 {
+	if d.config.skipFrameRate {
+		// If frame rate operations are disabled, return a default value
+		return 30, nil // You can choose any reasonable default
+	}
+
+	if reflect.ValueOf(d.config.fps).IsZero() {
 		param, err := d.GetStreamParam()
 		if err != nil {
 			return 0, fmt.Errorf("device: frame rate: %w", err)
 		}
+
 		switch {
 		case d.cap.IsVideoCaptureSupported():
 			d.config.fps = param.Capture.TimePerFrame.Denominator
