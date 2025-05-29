@@ -195,7 +195,8 @@ func printFormatInfo(dev *device2.Device) error {
 }
 
 func printFormatDesc(dev *device2.Device) error {
-	descs, err := dev.GetFormatDescriptions()
+	pix, _ := dev.GetPixFormat()
+	descs, err := dev.GetFormatDescriptions(pix.PixelFormat)
 	if err != nil {
 		return fmt.Errorf("format desc: %w", err)
 	}
