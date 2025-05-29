@@ -27,18 +27,60 @@ var (
 	PixelFmtMPEG  FourCCType = C.V4L2_PIX_FMT_MPEG
 	PixelFmtH264  FourCCType = C.V4L2_PIX_FMT_H264
 	PixelFmtMPEG4 FourCCType = C.V4L2_PIX_FMT_MPEG4
+	// 8-bit Bayer formats
+	PixelFmtSBGGR8 FourCCType = C.V4L2_PIX_FMT_SBGGR8 // BGGR
+	PixelFmtSGBRG8 FourCCType = C.V4L2_PIX_FMT_SGBRG8 // GBRG
+	PixelFmtSGRBG8 FourCCType = C.V4L2_PIX_FMT_SGRBG8 // GRBG
+	PixelFmtSRGGB8 FourCCType = C.V4L2_PIX_FMT_SRGGB8 // RGGB
+
+	// 10-bit Bayer formats
+	PixelFmtSBGGR10 FourCCType = C.V4L2_PIX_FMT_SBGGR10 // BGGR
+	PixelFmtSGBRG10 FourCCType = C.V4L2_PIX_FMT_SGBRG10 // GBRG
+	PixelFmtSGRBG10 FourCCType = C.V4L2_PIX_FMT_SGRBG10 // GRBG
+	PixelFmtSRGGB10 FourCCType = C.V4L2_PIX_FMT_SRGGB10 // RGGB
+
+	// 12-bit Bayer formats
+	PixelFmtSBGGR12 FourCCType = C.V4L2_PIX_FMT_SBGGR12 // BGGR
+	PixelFmtSGBRG12 FourCCType = C.V4L2_PIX_FMT_SGBRG12 // GBRG
+	PixelFmtSGRBG12 FourCCType = C.V4L2_PIX_FMT_SGRBG12 // GRBG
+	PixelFmtSRGGB12 FourCCType = C.V4L2_PIX_FMT_SRGGB12 // RGGB
+
+	// 16-bit Bayer formats
+	PixelFmtSBGGR16 FourCCType = C.V4L2_PIX_FMT_SBGGR16 // BGGR
+	PixelFmtSGBRG16 FourCCType = C.V4L2_PIX_FMT_SGBRG16 // GBRG
+	PixelFmtSGRBG16 FourCCType = C.V4L2_PIX_FMT_SGRBG16 // GRBG
+	PixelFmtSRGGB16 FourCCType = C.V4L2_PIX_FMT_SRGGB16 // RGGB
 )
 
 // PixelFormats provides a map of FourCCType encoding description
 var PixelFormats = map[FourCCType]string{
-	PixelFmtRGB24: "24-bit RGB 8-8-8",
-	PixelFmtGrey:  "8-bit Greyscale",
-	PixelFmtYUYV:  "YUYV 4:2:2",
-	PixelFmtMJPEG: "Motion-JPEG",
-	PixelFmtJPEG:  "JFIF JPEG",
-	PixelFmtMPEG:  "MPEG-1/2/4",
-	PixelFmtH264:  "H.264",
-	PixelFmtMPEG4: "MPEG-4 Part 2 ES",
+	PixelFmtRGB24:  "24-bit RGB 8-8-8",
+	PixelFmtGrey:   "8-bit Greyscale",
+	PixelFmtYUYV:   "YUYV 4:2:2",
+	PixelFmtMJPEG:  "Motion-JPEG",
+	PixelFmtJPEG:   "JFIF JPEG",
+	PixelFmtMPEG:   "MPEG-1/2/4",
+	PixelFmtH264:   "H.264",
+	PixelFmtMPEG4:  "MPEG-4 Part 2 ES",
+	PixelFmtSBGGR8: "8-bit Bayer BGGR",
+	PixelFmtSGBRG8: "8-bit Bayer GBRG",
+	PixelFmtSGRBG8: "8-bit Bayer GRBG",
+	PixelFmtSRGGB8: "8-bit Bayer RGGB",
+	// 10-bit
+	PixelFmtSBGGR10: "10-bit Bayer BGGR",
+	PixelFmtSGBRG10: "10-bit Bayer GBRG",
+	PixelFmtSGRBG10: "10-bit Bayer GRBG",
+	PixelFmtSRGGB10: "10-bit Bayer RGGB",
+	// 12-bit
+	PixelFmtSBGGR12: "12-bit Bayer BGGR",
+	PixelFmtSGBRG12: "12-bit Bayer GBRG",
+	PixelFmtSGRBG12: "12-bit Bayer GRBG",
+	PixelFmtSRGGB12: "12-bit Bayer RGGB",
+	// 16-bit
+	PixelFmtSBGGR16: "16-bit Bayer BGGR",
+	PixelFmtSGBRG16: "16-bit Bayer GBRG",
+	PixelFmtSGRBG16: "16-bit Bayer GRBG",
+	PixelFmtSRGGB16: "16-bit Bayer RGGB",
 }
 
 // IsPixYUVEncoded returns true if the pixel format is a chrome+luminance YUV format
@@ -158,7 +200,7 @@ var Quantizations = map[QuantizationType]string{
 func ColorspaceToQuantization(cs ColorspaceType) QuantizationType {
 	// TODO any RGB/HSV pixel formats should also return full-range
 	switch cs {
-	case ColorspaceOPRGB, ColorspaceSRGB, ColorspaceJPEG:
+	case ColorspaceOPRGB, ColorspaceSRGB, ColorspaceJPEG, ColorspaceRaw:
 		return QuantizationFullRange
 	default:
 		return QuantizationLimitedRange
@@ -276,6 +318,34 @@ func (f PixFormat) String() string {
 		Quantizations[f.Quantization],
 		XferFunctions[f.XferFunc],
 	)
+}
+func IsPixBayerFormat(pixFmt FourCCType) bool {
+	switch pixFmt {
+	case
+		PixelFmtSBGGR8, PixelFmtSGBRG8, PixelFmtSGRBG8, PixelFmtSRGGB8,
+		PixelFmtSBGGR10, PixelFmtSGBRG10, PixelFmtSGRBG10, PixelFmtSRGGB10,
+		PixelFmtSBGGR12, PixelFmtSGBRG12, PixelFmtSGRBG12, PixelFmtSRGGB12,
+		PixelFmtSBGGR16, PixelFmtSGBRG16, PixelFmtSGRBG16, PixelFmtSRGGB16:
+		return true
+	default:
+		return false
+	}
+}
+
+// Get the bit depth of a Bayer format
+func GetBayerBitDepth(pixFmt FourCCType) int {
+	switch pixFmt {
+	case PixelFmtSBGGR8, PixelFmtSGBRG8, PixelFmtSGRBG8, PixelFmtSRGGB8:
+		return 8
+	case PixelFmtSBGGR10, PixelFmtSGBRG10, PixelFmtSGRBG10, PixelFmtSRGGB10:
+		return 10
+	case PixelFmtSBGGR12, PixelFmtSGBRG12, PixelFmtSGRBG12, PixelFmtSRGGB12:
+		return 12
+	case PixelFmtSBGGR16, PixelFmtSGBRG16, PixelFmtSGRBG16, PixelFmtSRGGB16:
+		return 16
+	default:
+		return 0
+	}
 }
 
 // GetPixFormat retrieves pixel information for the specified driver (via v4l2_format and v4l2_pix_format)
